@@ -1,3 +1,5 @@
+// @ts-check
+
 import React from "react";
 
 interface Param {
@@ -8,7 +10,7 @@ interface Param {
 
 interface ParamValue {
   paramId: number;
-  value: string;
+  value: string | number;
 }
 
 interface Model {
@@ -25,25 +27,41 @@ interface State {
   model: Model;
 }
 
-
-interface PropsTextField {
-  id: number | undefined,
-  type: any,
-  changeModel: any,
-  value: any
+interface ParamEditorProps {
+  id?: number,
+  value: string | number | undefined,
+  type?: string | undefined,
+  changeModel: any
 }
 
  
-class TextField extends React.Component<PropsTextField> {
-  constructor(props: PropsTextField) {
-    super(props);
-    this.state = { type: props.type, value: props.value, changeModel: props.changeModel};
+class StringParamEditor extends React.Component<ParamEditorProps> {
+  render() {
+    return (
+      <input type="text" defaultValue={this.props.value} onChange={({ target }) => this.props.changeModel(this.props.id, target.value)} />
+    )
   }
+}
+
+class NumberParamEditor extends React.Component<ParamEditorProps> {
+  render() {
+    return (
+      <input type="number" defaultValue={this.props.value} onChange={({ target }) => this.props.changeModel(this.props.id, target.value)} />
+    )
+  }
+}
+
+
+class SingleParamEditor extends React.Component<ParamEditorProps> {
   render() {
     const { id, type, value, changeModel } = this.props;
-    return (
-      <input type={type} onChange={() => changeModel(id, value)} defaultValue={value}/>
-    )
+    switch(type) {
+      case 'string': return (<StringParamEditor id={id} value={value} changeModel={changeModel} />);
+      case 'number': return (<NumberParamEditor id={id} value={value} changeModel={changeModel} />);
+      case 'DWORD': return (<NumberParamEditor id={id} value={value} changeModel={changeModel} />);
+      default:
+        throw new Error(`Unknown ${type} type`);
+    }
   }
 }
 
@@ -54,11 +72,11 @@ class ParamEditor extends React.Component<Props, State> {
     super(props);
     this.state = { params: props.params, model: props.model };
   }
-
-  changeModel = (id: number | undefined, text: any) => {
+  
+  changeModel = (id: number, value: string | number): void => {
     const model = this.getModel();
     const newModel = model.paramValues.reduce((acc, data): any => {
-      const newValue = data.paramId === id ? text : data.value;
+      const newValue = data.paramId === id ? value : data.value;
       const newParam = { paramId: data.paramId, value: newValue };
       const newParams = [...acc.paramValues, newParam];
       return { paramValues: newParams };
@@ -81,7 +99,7 @@ class ParamEditor extends React.Component<Props, State> {
         return (
         <div key={id} style={style}>
           <p key={id}>{name}</p>
-          <TextField id={getParamValue?.paramId} type={type} value={getParamValue?.value} changeModel={this.changeModel}/>
+          <SingleParamEditor id={getParamValue?.paramId} type={type} value={getParamValue?.value} changeModel={this.changeModel}/>
         </div>)
         })}
       </div>
